@@ -1,0 +1,54 @@
+---
+- hosts: datacenter
+  become: yes
+  tasks: 
+        - name: 'Instalação de Pacotes BD'
+          apt:
+           pkg:
+             - mysql-server
+             - wget
+             - zip
+             - curl
+             - vim
+             - python-mysqldb   
+           state: present
+        - name: 'Criando DB Backup'
+          mysql_db:
+            name: backup
+            login_user: root
+            login_password: 123456
+            state: present
+        - name: 'Remoção Acesso anonymous'
+          mysql_user:
+            login_user: root
+            login_password: 123456
+            name: ''
+            host: all
+            state: absent
+        - name: 'Importação Base de Dados backup.sql'
+          mysql_db:
+            login_user: root
+            login_password: 123456
+            state: import
+            name: backup
+            target: /opt/backup.sql
+        - name: 'Cria usuário no MySQL'
+          mysql_user:
+            host: '%'
+            login_user: root
+            login_password: 123456
+            name: express
+            password: 'AllSafe0!'
+            priv: 'backup.*:ALL'
+            state: present
+          notify: Restart Mysql
+        - name: start mysql
+          service:
+            name: mysql
+            enabled: yes
+            state: started
+        - name: Restart Mysql
+          service:
+            name: mysql
+            state: restarted
+            enabled: yes       
